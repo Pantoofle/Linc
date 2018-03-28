@@ -16,16 +16,13 @@ listen(Hist) ->
 handle(Msg) ->
 	Me = node(),
 	case Msg of
-		{command, Node, {Module, Function, Args}, _} when Node == Me ->	
-			spawn(Module, Function, Args);
+		{control, Node, Command, Args, _} when Node == Me ->
+			spawn(command, Command, Args);
 
-		{control, Node, Command} when Node == Me ->
-			command:Command();
-
-		{control, all, Command} ->
+		{control, all, Command, Args, _} ->
 			comm:broadcast(Msg),
-			command:Command();
-
+			spawn(command, Command, Args);
 		_ ->
+			io:fwrite("[~p] I don't understand~n", [node()]),
 			comm:broadcast(Msg)
 	end.
