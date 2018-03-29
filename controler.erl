@@ -1,12 +1,9 @@
 -module(controler).
--export([sendCommand/3, sendMsg/3,
+-export([sendCommand/4,
 		 spawn/1, shutdown/1, spawn_all/1]).
 
-sendCommand(Entry, Target, {Module, Fun, Args}) ->
-	{listener, Entry} ! {command, Target, {Module, Fun, Args}, rand:uniform(4096)}.
-
-sendMsg(Entry, Target, Msg) ->
-	{listener, Entry} ! {command, Target, {io, fwrite, [Msg, []]}, rand:uniform(4096)}.
+sendCommand(Entry, Target, Command, Args) ->
+	comm:send(Entry, {command, Target, Command, Args}).
 
 spawn(Node) ->
 	net_adm:ping(Node),
@@ -17,13 +14,12 @@ spawn_all(0) ->
 	io:fwrite("Spawning done~n");
 
 spawn_all(Id) ->
-	?MODULE:spawn(list_to_atom(lists:concat(["n", Id, "@ouranos"]))),
+	Host = lists:nthtail(1, string:find(atom_to_list(node()), "@")),
+	?MODULE:spawn(list_to_atom(lists:concat(["n", Id, "@", Host]))),
 	?MODULE:spawn_all(Id-1).
 
-shutdown(all) ->
-	{listener, lists:last(nodes())} ! {control, all, shutdown};
 shutdown(Node) ->
-	{listener, Node} ! {control, Node, shutdown}.
+	comm:send(lists:last(nodes()), {command, Node, shutdown, []}).
 
 
 

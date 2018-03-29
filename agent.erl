@@ -5,21 +5,21 @@
 listen() -> listen([]).
 listen(Hist) -> 
 	receive
-		Msg -> 
-			H = comm:hash(Msg),
+		{Data, Seed} -> 
+			H = comm:hash({Data, Seed}),
 			case lists:member(H, Hist) of
 				true -> listen(Hist);
-				false -> handle(Msg), listen([H | Hist])
+				false -> handle(Data), listen([H | Hist])
 			end
 	end.	
 
 handle(Msg) ->
 	Me = node(),
 	case Msg of
-		{control, Node, Command, Args, _} when Node == Me ->
+		{command, Node, Command, Args} when Node == Me ->
 			spawn(command, Command, Args);
 
-		{control, all, Command, Args, _} ->
+		{command, all, Command, Args} ->
 			comm:broadcast(Msg),
 			spawn(command, Command, Args);
 		_ ->
