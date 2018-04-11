@@ -13,3 +13,5 @@ neighbours() ->
 link(Node) ->
 	io:fwrite("[~p] Linking to ~p~n", [node(), Node]),
 	net_adm:ping(Node).
+
+

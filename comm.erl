@@ -1,5 +1,5 @@
 -module(comm).
--export([hash/1, broadcast/1, send/2]).
+-export([hash/1, broadcast/1, send/2, forward_all/1]).
 
 hash(Msg) ->
 	S = io_lib:format("~p", [Msg]),
@@ -8,6 +8,8 @@ hash(Msg) ->
 broadcast(Msg) ->
 	lists:foreach(fun(Target) -> send(Target, Msg) end, nodes()).
 
+forward_all(Msg) ->
+	lists:foreach(fun(Target) -> {listener, Target} ! Msg end, nodes()).
 
 send(all, Msg) ->
 	Rnd = rand:uniform(4096),

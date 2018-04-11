@@ -1,6 +1,6 @@
 -module(agent).
 -export([listen/0, 
-		 handle/1]).
+		 handle/2]).
 
 listen() -> listen([]).
 listen(Hist) -> 
@@ -8,21 +8,21 @@ listen(Hist) ->
 		{Data, Seed} -> 
 			H = comm:hash({Data, Seed}),
 			case lists:member(H, Hist) of
-				true -> listen(Hist);
-				false -> handle(Data), listen([H | Hist])
+				true  -> listen(Hist);
+				false -> handle(Data, Seed), listen([H | Hist])
 			end
 	end.	
 
-handle(Msg) ->
+handle(Msg, Seed) ->
 	Me = node(),
 	case Msg of
 		{command, Node, Command, Args} when Node == Me ->
 			spawn(command, Command, Args);
 
 		{command, all, Command, Args} ->
-			comm:broadcast(Msg),
+			comm:forward_all({Msg, Seed}),
 			spawn(command, Command, Args);
+
 		_ ->
-			io:fwrite("[~p] I don't understand~n", [node()]),
-			comm:broadcast(Msg)
+			comm:forward_all({Msg, Seed})
 	end.
