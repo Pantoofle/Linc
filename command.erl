@@ -5,13 +5,11 @@
 
 shutdown() ->
 	io:fwrite("[~p] Shutting down~n", [node()]),
+	lists:foreach(fun(Node) -> comm:send(Node, {dead, node()}) end, nodes()),
 	init:stop().
 
 neighbours() ->
-	io:fwrite("[~p] Neighbours: ~p~n", [node(), nodes()]).
+	io:fwrite("[~p] Neighbours : ~p~n", [node(), nodes()]).
 
 link(Node) ->
-	io:fwrite("[~p] Linking to ~p~n", [node(), Node]),
-	net_adm:ping(Node).
-
-
+	comm:send_to_back({link, Node}).
