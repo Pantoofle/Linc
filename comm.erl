@@ -11,7 +11,7 @@ hash(Msg) ->
 	crypto:hash(md5, lists:flatten(S)).
 
 broadcast(Msg) ->
-	lists:foreach(fun(Target) -> send(Target, Msg) end, nodes()).
+	send(all, Msg).
 
 forward_all(Msg) ->
 	lists:foreach(fun(Target) -> {back, Target} ! Msg end, nodes()).
@@ -21,9 +21,9 @@ send(all, Msg) ->
 	lists:foreach(fun(Node) -> {back, Node} ! {Msg, Rnd} end, nodes());
 
 send(Node, Msg) ->
-	case lists:member(Node, [node() | nodes()] ) of
-		true ->	{back, Node} ! {Msg, rand:uniform(4096)};
-		false -> unknown_node
+	case ets:lookup(linc_route, Node) of
+		[] -> send(all, {whereis, Node}), ets:insert(linc_wait, {Node, Msg}), ok;
+		[{_, _, By} | _] -> {back, By} ! {Msg, rand:uniform(4096)}, wait
 	end.
 
 send_to_front(Msg) -> 

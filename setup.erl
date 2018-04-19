@@ -1,7 +1,7 @@
 -module(setup).
 -export([bootstrap/1,
 		 setup_front/0,
-		 setup_back/1,
+		 setup_back/0,
 		 spawn_all/1,
 		 build_ring/0,
 		 disconnect_all/0]).
@@ -12,10 +12,11 @@ bootstrap(Node) ->
 			   back,
 			   comm,
 			   command,
+			   storage,
 			   setup],
  
 	lists:foreach(fun(Mod) -> load_remote_code(Node, Mod) end, Modules),
-	spawn(Node, ?MODULE, setup_back, [node()]),
+	spawn(Node, ?MODULE, setup_back, []),
 	spawn(Node, ?MODULE, setup_front, []).
 
 % SETUP COMMANDS
@@ -29,8 +30,8 @@ spawn_all(Id) ->
 disconnect_all() ->
 	N = lists:last(nodes()),
 	io:fwrite("Disconnecting from all nodes~n"),
-	lists:foreach(fun(Node) -> comm:send(Node, {dead, node()}), erlang:disconnect_node(Node) end, 
-                  nodes()),
+	comm:send(all, {dead, node()}),
+	lists:foreach(fun(Node) -> erlang:disconnect_node(Node) end, nodes()),
 	io:fwrite("Reconnecting to node ~p~n", [N]),
 	timer:apply_after(50, net_adm, ping, [N]),
 	ok.
@@ -48,9 +49,8 @@ setup_front() ->
 	end,
 	front:start().
 
-setup_back(Node) ->
-	io:fwrite("[~p] Setup back. Initial connection to ~p~n", [node(), Node]),
-	net_adm:ping(Node),
+setup_back() ->
+	io:fwrite("[~p] Setup back.~n", [node()]),
 	case lists:member(back, registered()) of
 		true -> unregister(back), register(back, self());
 		false-> register(back, self())
@@ -59,7 +59,14 @@ setup_back(Node) ->
 
 % TOPOLOGY CONTROL
 build_ring() ->
+	case lists:member(linc_route, ets:all()) of
+		true  -> ok;
+		false -> ets:new(linc_route, [set, public, named_table])
+	end,
+	lists:foreach(fun(Node) -> ets:insert(linc_route, {Node, 1, Node}) end, nodes()),
 	lists:foldl(fun(Node, Acc) -> io:fwrite("~p -> ~p~n", [Acc, Node]), 
 								  comm:send(Acc, {link, Node}), Node end, 
 				lists:last(nodes()),
-				nodes()).
+				nodes()),
+	ets:delete(linc_route).
+
