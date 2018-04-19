@@ -5,11 +5,17 @@ NB_AGENT ?= 10
 ctrl:
 	erl -sname ctrl -connect_all false
 	
+user:
+	erl -sname user -connect_all false
+	
 spawn:
 	echo "Spawning the agents : " $(NB_AGENT)
 	for i in `seq 1 $(NB_AGENT)`; do \
 	echo $$i / $(NB_AGENT); \
+	mkdir -p nodes/$$i ; \
+	cd nodes/$$i ; \
 	erl -sname n$$i -detached -connect_all false; \
+	cd ../.. ; \
 	done; \
 	true
 
@@ -23,6 +29,6 @@ clean:
 	break; \
 	fi; \
 	echo $$f; \
-	rm -f $$f; \
+	rm -fr $$f; \
 	done < .gitignore; \
 	true
