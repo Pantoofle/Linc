@@ -4,7 +4,9 @@
 		 link/1,
 		 recover/2,
 		 gather/2,
-		 store/3]).
+		 store/3,
+		 release/2
+        ]).
 
 shutdown() ->
 	lists:foreach(fun(Node) -> comm:send(Node, {dead, node()}) end, nodes()),
@@ -13,12 +15,15 @@ shutdown() ->
 
 % Client asked for this node's neighborhood
 neighbours(Client) -> 
-	comm:send(Client, {neighbours, node(), nodes()}).
+	comm:send(Client, {neighbours, Client, {node(), nodes()}}).
 
 link(Node) ->
 	comm:send_to_back({link, Node}).
 
-% Store a piece of a file on this node
+
+% DATA STORAGE
+
+% Store a file on this node
 store(Id, Parts, Bin) ->
 	storage:store(Id, Parts, Bin).
 
@@ -29,15 +34,13 @@ recover(Id, Client) ->
 
 % Send to Client all the parts of file Id stored in this node
 gather(Id, Client) ->
-	Parts = ets:match_object(linc_files, {Id, '_', '_'}),
-	lists:map(
-		fun({_Id, _Part, _Tot}) -> 
-			case storage:read(_Id, _Part) of
-				{ok, Bin} -> comm:send(Client,{file_part, _Id, _Part, _Tot, Bin});
-    			_ -> failed
-    		end
-		end, 
-		Parts).
+	storage:gather(Id, Client).
 
+% Release a piece of data
+
+release(Id, all) ->
+	storage:release(Id, '_');
+release(Id, Part) ->
+	storage:release(Id, Part).
 
 

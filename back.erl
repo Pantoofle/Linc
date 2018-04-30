@@ -19,7 +19,7 @@ start() ->
 
 listen() -> listen([]).
 listen(Hist) -> 
-	% When listeneng, we test if the message is not already seen. If it is the case, dont handle it
+	% When listening, we test if the message is not already seen. If it is the case, dont handle it
 	receive
 		{Data, Seed} -> 
 			H = comm:hash({Data, Seed}),
@@ -40,11 +40,11 @@ handle(Msg, Seed) ->
 		{update} -> update_direct_link();
 
 		% COMMAND FUNCTIONS, THEY ARE HANDLED BY THE FRONTEND
-		{command, Target, Command, Args} when Target == Me -> comm:send_to_front({command, Command, Args});
-		{command, all, Command, Args} ->
+		{Tag, Target, Data} when Target == Me -> comm:send_to_front({Tag, Data});
+		{Tag, all, Data} ->
 			comm:forward_all({Msg, Seed}),
-            comm:send_to_front({command, Command, Args});		
-		{command, Target, _, _} -> comm:send(Target, Msg); 
+            comm:send_to_front({Tag, Data});		
+		{_, Target, _} -> comm:send(Target, Msg); 
 
 		% DEFAULT BEHAVIOUR WHEN DONT UNDERSTAND: MAYBE ANOTHER NODE CAN UNDERSTAND THIS
 		_ ->

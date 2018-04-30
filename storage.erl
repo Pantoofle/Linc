@@ -1,7 +1,10 @@
 -module(storage).
 -export([store/3, 
 		 release/2,
-		 read/2]).
+		 read/2,
+		 gather/2,
+		 nb_stored_elements/0
+		]).
 
 
 % STORING
@@ -27,8 +30,27 @@ release(Id, Part) ->
 		      Files).
 
 % READING/ACCESING
+
 read(Id, Part) ->
 	file:read_file(create_name(Id, Part)).
+
+gather(Id, Client) ->
+	io:fwrite("[~p] Gathering file ~p~n", [node(), Id]),
+	Parts = ets:match_object(linc_files, {Id, '_', '_'}),
+	lists:map(
+		fun({_Id, _Part, _Tot}) -> 
+			case storage:read(_Id, _Part) of
+				{ok, Bin} -> comm:send(Client,{file_part, _Id, _Part, _Tot, Bin}),
+							io:fwrite("[~p] I found part ~p, sending ~p~n", 
+								[node(), _Part,{file_part, _Id, _Part, _Tot}]);
+    			_ -> failed
+    		end
+		end, 
+		Parts).
+
+% BALANCING THE LOAD
+
+
 
 % MISCELANOUS
 
@@ -40,3 +62,9 @@ split(Bin, Parts) ->
 
 create_name(Id, PartNb) ->
 	string:concat(integer_to_list(Id), string:concat(".part", integer_to_list(PartNb))).
+
+nb_stored_elements() ->
+	case lists:keysearch('size', 0, ets:info(linc_files)) of
+		{value, {size, N}} -> N;
+		_ -> error
+	end.

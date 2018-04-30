@@ -12,15 +12,17 @@ listen() ->
 	Me = node(),
 	receive
 		% RECEIVED FROM THE BACK, IT ASKS FOR A FUNCTION CALL
-    	{command, Command, Args} ->
+    	{command, {Command, Args}} ->
     		spawn(command, Command, Args);
 
 		% RECEIVED FROM A USER, DETERMINE IF EXECUTE IMEDIATELY OR SEND TO BACK BEFORE
-		{command, Node, Command, Args} when Node == Me -> 
+		{command, Node, {Command, Args}} when Node == Me -> 
     		spawn(command, Command, Args);
-		{command, all, Command, Args} ->
-			comm:send_to_back({command, all, Command, Args});
+		{command, all, {Command, Args}} ->
+			comm:send_to_back({command, all, {Command, Args}});
+		{command, Node, {Command, Args}} -> 
+			comm:send_to_back({command, Node, {Command, Args}});
 
-		_ -> io:fwrite("Dont understand~n")
+		A -> io:fwrite("[~p] Dont understand : ~p~n", [node(), A])
 	end,
 	listen().

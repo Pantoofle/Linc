@@ -14,16 +14,24 @@ broadcast(Msg) ->
 	send(all, Msg).
 
 forward_all(Msg) ->
-	lists:foreach(fun(Target) -> {back, Target} ! Msg end, nodes()).
+	lists:foreach(fun(Target) -> {back, Target} ! Msg,
+							io:fwrite("[~p] Sending ~p to ~p~n", [node(), Msg, Target])
+					end, nodes()).
 
 send(all, Msg) ->
 	Rnd = rand:uniform(4096),
-	lists:foreach(fun(Node) -> {back, Node} ! {Msg, Rnd} end, nodes());
+	lists:foreach(fun(Node) -> {back, Node} ! {Msg, Rnd},
+                			io:fwrite("[~p] Sending ~p to ~p~n", [node(), Msg, Node])
+            	 end, nodes());
 
 send(Node, Msg) ->
 	case ets:lookup(linc_route, Node) of
-		[] -> send(all, {whereis, Node}), ets:insert(linc_wait, {Node, Msg}), ok;
-		[{_, _, By} | _] -> {back, By} ! {Msg, rand:uniform(4096)}, wait
+		[] -> 
+        	io:fwrite("[~p] Don't know where ~p is. Asking my neighbours~n", [node(), Node]),
+            send(all, {whereis, Node}), ets:insert(linc_wait, {Node, Msg}), ok;
+		[{_, _, By} | _] -> 
+        	io:fwrite("[~p] Sending ~p to ~p via ~p~n", [node(), Msg, Node, By]),
+    		{back, By} ! {Msg, rand:uniform(4096)}, ok
 	end.
 
 send_to_front(Msg) -> 
