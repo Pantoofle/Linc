@@ -12,6 +12,7 @@ bootstrap(Node) ->
 			   back,
 			   comm,
 			   command,
+			   routing,
 			   storage,
 			   setup],
  
@@ -63,7 +64,7 @@ build_ring() ->
 		true  -> ok;
 		false -> ets:new(linc_route, [set, public, named_table])
 	end,
-	lists:foreach(fun(Node) -> ets:insert(linc_route, {Node, 1, Node}) end, nodes()),
+	lists:foreach(fun(Node) -> ets:insert(linc_route, {Node, agent, 1, Node}) end, nodes()),
 	lists:foldl(fun(Node, Acc) -> io:fwrite("~p -> ~p~n", [Acc, Node]), 
 								  comm:send(Acc, {link, Node}), Node end, 
 				lists:last(nodes()),

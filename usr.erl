@@ -8,6 +8,7 @@
 		 sendCommand/1,
 		 shutdown/1, 
 		 neighbours/0,
+		 load/0,
 		 store_file/2,
 		 recover_file/2,
 		 release_file/1
@@ -33,8 +34,8 @@ setup() ->
 		true  -> ok;
 		false -> ets:new(linc_route, [set, public, named_table])
 	end,
-	lists:foreach(fun(Node) -> ets:insert(linc_route, {Node, 1, Node}) end, nodes()),
-	ets:insert(linc_route, {node(), 0, node()}),
+	lists:foreach(fun(Node) -> comm:send(Node, {query_link, node(), user}) end, nodes()),
+	ets:insert(linc_route, {node(), user, 0, node()}),
 
 	register(back, spawn(?MODULE, listen, [])),
 	register(front, self()),
@@ -42,9 +43,8 @@ setup() ->
 
 link(Entry) -> 
 	case net_adm:ping(Entry) of
-		pong -> ets:insert(linc_route, {Entry, 1, Entry}),
-            	comm:send(Entry, {link, node()}), 
-			    io:fwrite("[usr] Linked to ~p with success~n", [Entry]);
+		pong -> 
+			comm:send(Entry, {query_link, user, node()});
 		pang -> io:fwrite("[usr] Failed to reach node ~p~n", [Entry])
 	end.
 
@@ -59,8 +59,21 @@ listen() ->
 
 handle(Msg) ->
 	case Msg of
-		{neighbours, Target, {From, Neighbours}} when Target == node() -> 
-			io:fwrite("[~p] My neighbours : ~p~n", [From, Neighbours]);
+		% The display functions. When asked for informations
+		{{display, Tag}, Target, {From, Data}} when Target == node() ->
+			io:fwrite("[~p] My ~p : ~p~n", [From, Tag, Data]);
+		
+		% Answer to pings. Tell them you are a user node, dont receive.
+		{query_link, Node} -> 
+			ets:insert(linc_route, {Node, agent, 1, Node}),
+			comm:send(Node, {user_node, node()}),
+			ets:delete(linc_route, {Node, agent, 1, Node}),
+			erlang:disconnect(Node);
+
+		{confirm_link, Node} ->
+		    io:fwrite("[usr] Linked to ~p with success~n", [Node]),
+			ets:insert(linc_route, {Node, agent, 1, Node});
+
 		_ -> {front, node()} ! Msg
 	end.
 
@@ -68,7 +81,8 @@ handle(Msg) ->
 
 % SEND A SPECIFIC COMMAND
 sendCommand(Entry, Target, Command, Args) ->
-	io:fwrite("[usr] Sending command to entry point ~p~n", [Entry]),
+	io:fwrite("[usr] Sending to front of entry point ~p the msg :~p~n", 
+		[Entry, {command, Target, {Command, Args}}]),
 	{front, Entry} ! {command, Target, {Command, Args}}.
 
 sendCommand(Target, Command, Args) ->
@@ -88,6 +102,9 @@ shutdown(Node) ->
 
 neighbours() ->
 	sendCommand(all, neighbours, [node()]).
+
+load() ->
+	sendCommand(all, load, [node()]).
 
 
 % FILE STORAGE FUNCTIONS
@@ -124,7 +141,8 @@ receive_parts(Id)->
 		_ -> receive_parts(Id)
 	after 
 		10000 -> 
-			io:fwrite("[usr] No node seem to have this file~n"), failed
+			io:fwrite("[usr] No node seem to have this file~n"), 
+			failed
 	end.
 
 receive_parts(_, Chunks, 0) -> Chunks;
@@ -142,7 +160,8 @@ receive_parts(Id, Chunks, Remain) ->
 
 	after 
 		10000 -> 
-			io:fwrite("[usr] No part received for 10s and still missing some parts. Maybe a piece of the file was lost~n")
+			io:fwrite("[usr] No part received for 10s and still missing some parts. Maybe a piece of the file was lost~n"),
+			failed
     end.
 
 release_file(Id) ->
