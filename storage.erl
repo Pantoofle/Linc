@@ -31,7 +31,8 @@ store_one_part(Id, Nb, Tot, Bin) ->
 		Status ->
 			io:fwrite("[~p] Writing file ~p failed: ~p~n", [node(), Name, Status]),
 			failed
-	end.
+	end,
+	balance().
 
 % DELETING/RELEASING
 

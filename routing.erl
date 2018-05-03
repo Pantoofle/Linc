@@ -5,13 +5,14 @@
 	query_link/2,
 	add_link/2,
 	update_direct_link/0,
-    check_old_messages/1
+    check_old_messages/1,
+	shrink/0
 	]).
 
 update_path(From, To, Type, Dist) ->
 	case ets:lookup(linc_route, To) of
 		[]    -> ets:insert(linc_route, {To, Type, Dist+1, From}),	
-				 comm:broadcast({path, node(), To, Dist+1}),
+				 comm:broadcast({path, node(), To, Type, Dist+1}),
 				 check_old_messages(To);
 		[{_, _, _Dist, _By}|_]  -> 
 			case Dist+1 < _Dist of
@@ -52,6 +53,10 @@ update_direct_link() ->
 check_old_messages(Target) ->
 	case ets:lookup(linc_wait, Target) of
 		[] -> nothing;
-		[{_, Msg}| _] -> comm:send(Target, Msg )
+		[{_, Msg}| _] -> comm:send(Target, Msg );
+		[{_, Msg, Seed} | _] -> comm:send(Target, Msg, Seed)
 	end.
 	
+shrink() ->
+	Nei = ets:match_object(linc_route, {"$1", "_", "2", "_"}),
+	lists:foreach(fun(Node) -> link(Node) end, Nei).

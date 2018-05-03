@@ -27,7 +27,9 @@ listen() -> listen([]).
 listen(Hist) -> 
 	% When listening, we test if the message is not already seen. If it is the case, dont handle it
 	receive
-		{Data, Seed} -> 
+		{Data, Seed, Source} -> 
+			% Send ack if needed
+			comm:ack({Data, Seed, Source}),
 			H = comm:hash({Data, Seed}),
 			case lists:member(H, Hist) of
 				true  -> listen(Hist);
@@ -54,7 +56,7 @@ handle(Msg, Seed) ->
 		{Tag, Target, Data} when Target == Me -> 
 			comm:send_to_front({Tag, Data});
 		{Tag, all, Data} ->
-			comm:forward_all({Msg, Seed}),
+			comm:forward_all({Msg, Seed, node()}),
             comm:send_to_front({Tag, Data});		
 		{_, Target, _} -> comm:send(Target, Msg); 
 
@@ -63,5 +65,7 @@ handle(Msg, Seed) ->
 
 		% DEFAULT BEHAVIOUR WHEN DONT UNDERSTAND: MAYBE ANOTHER NODE CAN UNDERSTAND THIS
 		_ ->
-			comm:forward_all({Msg, Seed})
+			io:fwrite("[~p] Don't understand this ~p. Forwarding~n", 
+				[node(), Msg]),
+			comm:forward_all({Msg, Seed, node()})
 	end.

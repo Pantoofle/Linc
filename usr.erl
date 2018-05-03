@@ -52,7 +52,7 @@ link(Entry) ->
 % OUTPUT COMMANDS, DISPLAY THE RESULTS OF THE QUERIES
 listen() -> 
 	receive 
-		{Msg, _} -> handle(Msg);
+		{Msg, _, _} -> handle(Msg);
 		_ -> io:fwrite("[usr] Received wrong format~n")
 	end,
 	listen().
@@ -68,7 +68,7 @@ handle(Msg) ->
 			ets:insert(linc_route, {Node, agent, 1, Node}),
 			comm:send(Node, {user_node, node()}),
 			ets:delete(linc_route, {Node, agent, 1, Node}),
-			erlang:disconnect(Node);
+			erlang:disconnect_node(Node);
 
 		{confirm_link, Node} ->
 		    io:fwrite("[usr] Linked to ~p with success~n", [Node]),

@@ -14,8 +14,8 @@
 shutdown() ->
 	storage:empty(),
 	lists:foreach(fun(Node) -> comm:send(Node, {dead, node()}) end, nodes()),
-	exit(front, shutdown),
-	exit(back, shutdown).
+	erlang:exit(whereis(front), exit),
+	erlang:exit(whereis(back), exit).
 
 % Client asked for this node's neighborhood
 neighbours(Client) -> 
@@ -27,7 +27,7 @@ load(Client) ->
 	io:fwrite("[~p] The data I hold : ~n~p~n", [node(), ets:match_object(linc_files, '_')]).
 
 link(Node) ->
-	comm:send(Node, {query_link, node()}).
+	comm:send(Node, {query_link, agent, node()}).
 
 % DATA STORAGE
 
@@ -59,6 +59,6 @@ store_n_release(Node, Id, Part, Tot, Bin) ->
 	io:fwrite("[~p] Storing part ~p of Id ~p~n", [node(),Part, Id]),
 	storage:store_one_part(Id, Part, Tot, Bin),
 	io:fwrite("[~p] Asking ~p to release its parts~n", [node(), Node]),
-	comm:send(Node, {command, Node, {release, [Id, Part]}}).
-
+	comm:send(Node, {command, Node, {release, [Id, Part]}}),
+	balance().
 

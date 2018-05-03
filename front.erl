@@ -10,13 +10,15 @@ start() ->
 
 listen() ->
 	Me = node(),
-	receive
+	receive	
 		% RECEIVED FROM THE BACK, IT ASKS FOR A FUNCTION CALL
     	{command, {Command, Args}} ->
+			io:fwrite("[~p - front] Spawning ~p~n", [node(), Command]),	
     		spawn(command, Command, Args);
 
 		% RECEIVED FROM A USER, DETERMINE IF EXECUTE IMEDIATELY OR SEND TO BACK BEFORE
 		{command, Node, {Command, Args}} when Node == Me -> 
+			io:fwrite("[~p - front] Received command for me~n", [node()]),
     		spawn(command, Command, Args);
 		{command, Node, {Command, Args}} ->
 			io:fwrite("[~p - front] This command belongs to back~n", [node()]),
