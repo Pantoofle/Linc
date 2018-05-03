@@ -22,6 +22,11 @@ spawn:
 kill:
 	killall beam.smp
 
+pdf:
+	pdflatex rapport.tex
+	pdflatex rapport.tex
+
+
 clean:
 	echo "Cleaning..."
 	while read f; do \

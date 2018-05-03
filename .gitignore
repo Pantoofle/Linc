@@ -10,5 +10,27 @@ rel/example_project
 .rebar
 nodes/
 
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+
+*.dvi
+*-converted-to.*
+
+*.bbl
+*.bcf
+*.blg
+*-blx.aux
+*-blx.bib
+*.run.xml
+
 #NO-DEL
 *.pdf
