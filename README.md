@@ -48,7 +48,7 @@ by sending the message By.
 
 Each node only keeps the shortest path, and updates it when receiving
 `path` messages.
-The paths are stored in an `ets` table named `linc\_route`.
+The paths are stored in an `ets` table named `linc_route`.
 In this table there are elements `\{Target, Distance, Via\}`, 
 meaning that in order to reach `Target`, the node must send the
 message to `Via` and `Via` will forward it to the next node
@@ -94,7 +94,7 @@ In previous section I described how the `whereis` message works.
 But remember that the node must never be waiting for an answer to its
 message. So, when a node A wants to send a message to distant node B, 
 it sends the `whereis` message, and puts the message for B in a 
-table named `linc\_wait`. Messages in this table are waiting for 
+table named `linc_wait`. Messages in this table are waiting for 
 path to their recipient. So, each time a node learns a new path by 
 receiving a `path` message, it checks if it has messages to send
 to this newly-discovered node. This way, the node is never waiting for
@@ -104,11 +104,11 @@ the results of its `whereis` message.
 
 Important messages require an Ack message. But we must never wait for 
 the Ack. So, when a message is sent, we add an entry in the
-`linc\_ack` table, noting which Ack needs to be received. 
+`linc_ack` table, noting which Ack needs to be received. 
 When receiving an Ack, we delete it from the table. And regularly, we 
 check if we have unreceived Ack. If so, we `shrink` the node 
 (see previous section) and add the un-confirmed message to the 
-`linc\_wait` table, waiting for a new path to its recipient to 
+`linc_wait` table, waiting for a new path to its recipient to 
 be discovered. This way, when a node is disconnected, new path are build
 around it in order to keep the connected properties of the graph.
 
@@ -124,10 +124,10 @@ one node. A unique UUID is given to the user in order to recover the
 file later on.
 
 A table containing all files stored localy is built, named 
-`linc\_files`. An entry in this table has the pattern 
-`\{UUID, Part\_number, Total\_nb\_of\_parts\}`.
+`linc_files`. An entry in this table has the pattern 
+`\{UUID, Part_number, Total_nb_of_parts\}`.
 Files are written in the hard drive, not stored in the RAM. The files
-are named `<UUID>.part<part\_nb>`
+are named `<UUID>.part<part_nb>`
 
 ## Recover Data
 From any node, a user can ask for a given file with its UUID. Then the
@@ -136,7 +136,7 @@ come. Remember that the Agents must never be in blocking state, but user
 nodes can.
 When asking for a file, the user node broadcast to the whole network the
 UUID of the file and to whom to send the parts. 
-Each node will then check its stored files in `linc\_files` and
+Each node will then check its stored files in `linc_files` and
 send all parts that match this UUID.
 
 When the first part is received, the user can deduce the total number
@@ -192,10 +192,10 @@ See the Readme.md for cleaner explanations
 
 If no distant shells are already running the command `make spawn`
 will create detached processes ready to receive an Agent. One can also
-give the `NB\_AGENT` variable to specify the number of agents to
-spawn. For example `make spawn NB\_AGENT=15` will spawn 15 processes.
+give the `NB_AGENT` variable to specify the number of agents to
+spawn. For example `make spawn NB_AGENT=15` will spawn 15 processes.
 Processes spawned this way are named `n<id>@<host>` with 
-`<id>` going from 1 to NB\_AGENT and `<host>` the local
+`<id>` going from 1 to NB_AGENT and `<host>` the local
 host name.
 
 All these names are using short names. In order to connect to a truely
@@ -212,13 +212,13 @@ remote nodes.
 
 In the shell,
 - `c(setup).` : Compile the module
-- `setup:spawn\_all(N).` : Auto spawn N nodes on remote nodes 
+- `setup:spawn_all(N).` : Auto spawn N nodes on remote nodes 
 that were spawned with the Makefile (using the Makefile notation for
-nodes name.). For example, after a  `make spawn NB\_AGENT=15`, 
-use `setup:spawn\_all(15).` to bootstrap all nodes.
+nodes name.). For example, after a  `make spawn NB_AGENT=15`, 
+use `setup:spawn_all(15).` to bootstrap all nodes.
 - `setup:bootstrap(Node)` : Bootstrap a specific node
 - Now we must build a connected topology. For now, only one function
-is available : `setup:build\_ring()` automaticaly builds a ring
+is available : `setup:build_ring()` automaticaly builds a ring
 on all spawned nodes. LINC does not need to be a ring but it is an
 easy topology to start with and then transform it into a more complex
 one.
@@ -269,11 +269,11 @@ automaticaly be displayed in the user shell
 
 ## Data Management Commands
 Commands to manage data :
-- `usr:store\_file(<file\_name>, <nb\_parts>` will store the file
+- `usr:store_file(<file_name>, <nb_parts>` will store the file
 and split it into parts. This returns `\{ok, UUID\}` if success.
-- `usr:recover\_file(<UUID>, <file\_name>` will gather the pieces
+- `usr:recover_file(<UUID>, <file_name>` will gather the pieces
 of the file and, once all are received, save the file under name 
-<file\_name>
+<file_name>
 - `usr:sendCommand(Target, balance, [])` : Will force the
 balance of parts of node Target. (remember, Target can be `all`)
 - `usr:load()` will ask all nodes to display their load on 
